@@ -1,0 +1,50 @@
+=Memcached Support=
+I believe the way we can support invalidation with memcached would be to store in memcached an expires key
+
+In this key we could list keys that need to be expired.  Then on request we load that key into the request scope
+and expire any fragments listed.  The downside of doing this is we have to load the expires list each request.
+It could grow rather large so we'd need to develop a stradegy to expire the values in the expires key.
+
+
+=Basic Selector=
+
+  "/request/uri/" => [Fragment1,Fragment2,Fragment3]
+
+	Fragment => {
+		:query_params => "string",
+		:max_age => age_int,
+		:request_headers => {:http_x_requested_with => "value"},
+		:response_body => "string"
+	}
+
+==Expiring by uri==
+
+	cache.delete(uri) # this deletes all the values in the array
+
+==Retrieving cached fragments by uri and request==
+
+	fragments = cache.get(uri)
+
+	fragments.find{|fragment| fragment.match?(uri,request) }
+
+	match?(uri,request) compares the query params and the request_headers
+
+=Advanced Selector=
+
+The data stored in the expires key would be for advanced selector only.  These values would look like
+
+
+expires-tokens =>
+	[{ :uriprefix => "/prefix/",
+		:uriexp => /regexp-to-match/ }]
+
+
+Then on request:
+
+
+def cached?(request)
+	expires_tokens = cache.get("expires-tokens")
+	expires_tokens.select do |rule|
+		request.match(/^#{rule[:uriprefix]}/) and request.match(rule[:uriexp])
+	end.any? if expires_tokens
+end

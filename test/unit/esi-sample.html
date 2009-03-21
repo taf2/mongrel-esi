@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Something else</title>
+</head>
+<body>
+    <![CDATA[
+      Some cdata fun fun fun
+    ]]>
+  <h1>hello</h1>
+  <div class="body">
+    <esi:include src="/test/success?id=1"/>
+    <div>some content</div>
+    <!-- a little commentary -->
+    <!-- a 
+      multiline comment -->
+    <esi:try>
+      <esi:attempt>
+        <esi:include src="/test/success?id=2"/>
+      </esi:attempt>
+      <esi:except>
+        <p>it failed</p>
+        <esi:include src="/test/success?id=2"/>
+      </esi:except>
+    </esi:try>
+    <esi:include src="/test/success?id=3"/>
+    <esi:try>
+      <esi:attempt>
+        <p>We should get this or not?</p>
+        <esi:include src="/test/error"/>
+        <p>Now maybe we shouldn't see this?</p>
+      </esi:attempt>
+      <esi:except>
+        <p>except worked1</p>
+        <esi:include src="/test/success?id=4"/>
+        <p>except worked2</p>
+      </esi:except>
+    </esi:try>
+
+    <em>Support for em tags since they have an initial start sequence similar to and &lt;esi: start/end sequence</em>
+
+    <esi:invalidate>
+       <?xml version="1.0"?>
+       <!DOCTYPE INVALIDATION SYSTEM "internal:///WCSinvalidation.dtd">
+       <INVALIDATION VERSION="WCS-1.1">
+         <OBJECT>
+           <BASICSELECTOR URI="/test/success?id=1"/>
+           <ACTION REMOVALTTL="0"/>
+           <INFO VALUE="invalidating fragment test 1"/>
+         </OBJECT>
+       </INVALIDATION>
+    </esi:invalidate>
+
+  </div>
+</body>
+</html>

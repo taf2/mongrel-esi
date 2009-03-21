@@ -1,0 +1,8 @@
+== Development ==
+
+  Create symbolic links back to the parser.rl, common.rl, and parser.h
+
+  make setup
+
+
+  Now running make will compile the test file and run the tests through valgrind

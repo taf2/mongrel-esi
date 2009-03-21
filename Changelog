@@ -1,0 +1,139 @@
+2008-09-05  Todd A. Fisher
+  * Improve memory usage in parser
+
+2008-06-26  Todd A. Fisher
+	* 64 bit compat fixes
+
+2008-06-18  Todd A. Fisher
+  * Reduce memory fragmentation
+  * More response header work, ensure cached content uses the correct Content-Length
+  * Handle HEAD requests
+  * Handle HTTP/1.0 requests by buffering response and using Content-Length instead of Transfer-Encoding
+
+2008-06-16  Todd A. Fisher
+  * Add support for Surrogate-Control max-age response caching
+  * Fix Response Headers, ensure Content-Length: never appears with Transfer-Encoding: chunked
+  * Remove support for cache_ttl by host, use surrogate or max-age on the include tag
+  * Change server string to lower case mongrel-esi/version
+
+2008-06-08  Todd A. Fisher
+	* Buffer output before sending to ruby
+	* Release 0.5
+
+2008-06-06  Todd A. Fisher
+	* Branched a stable copy 0.4.1.1
+	* Processing esi close tags in a background thread
+	* Ragel 6.x compatible
+
+2008-06-05  Todd A. Fisher
+	* Correctly handle max-age attribute on esi:include tag
+	* Define a subclassed Parser from CParser
+
+2008-06-05  Todd A. Fisher
+  * Refactoring handler into esi/proxy.rb and esi/processor.rb
+	* Added test/load_test.rb script to help measure performance/scalablity
+
+2008-01-06  Todd A. Fisher
+  * Improve attribute parsing
+	* Optimize state machine, switch to T1, G1 creating extremely large parser
+
+== Release 0.4.0 ==
+  * Reworked configuration and commandline interface
+  * Logger cleanup
+	* Rewrite parser using Ragel
+  * Add support for thread safe dispatcher
+  * Update documentation in README
+  * Improve test/unit/handler_test to only start up mongrel server once for all tests
+  * Add test case for <esi:include tag, alt attribute used for failover
+  * Add support to route fully qualified URL's e.g.  <esi:include src="http://example.com/">
+  * Rework how Cache object is created and loaded to support more then ruby backend (e.g. memcached)
+
+2008-01-04  Todd A. Fisher
+  * Reworked configuration and commandline interface
+	* Synchornization fixes with memcached
+
+2007-12-31  Todd A. Fisher 
+  * Logger cleanup
+	* Rewrite parser using Ragel
+
+2007-12-20  Richard Kilmar
+  * Add support for thread safe dispatcher
+
+2007-12-17  Todd A. Fisher 
+  * Rewrite router, removing server iron support
+	* Rework configuration
+
+2007-12-06  Todd A. Fisher 
+  * Update documentation in README
+  * Improve test/unit/handler_test to only start up mongrel server once for all tests
+  * Add test case for <esi:include tag, alt attribute used for failover
+
+2007-12-05  Todd A. Fisher 
+  * Removed compiled extension code, keeping this server pure ruby
+	* Marked the stable-dec07 branch
+	* Moved pesi server into it's own project folder outside of mongrel-esi
+
+2007-12-04  Todd A. Fisher 
+  * Add support to route fully qualified URL's e.g.  <esi:include src="http://example.com/">
+
+2007-08-26  Todd A. Fisher 
+  * Fix rcov reporting
+  * Rework how Cache object is created and loaded to support more then ruby backend (e.g. memcached)
+
+2007-08-21  Todd A. Fisher 
+  * Refactoring IO to buffer less and stream more
+
+2007-08-20  Todd A. Fisher 
+  * Refactor tests to live under test/unit/
+
+2007-08-13  Todd A. Fisher 
+  * Use Hpricot.XML for all parsing since we don't use the html features
+	* Replace invalidation REXML code with Hpricot.XML
+
+2007-08-07  Todd A. Fisher 
+
+  * Set cache invalidator server up to be on only if configured to be enabled in config/esi.yml
+  * Refactor cache fragment storage removing lib/esi/fragment.rb and updating interface names
+  * Added some better test coverage for lib/esi/cache.rb
+  * Renamed ESI::FragmentCache, ESI::Cache
+  * A little code refactoring to reduce locking when synchronization isn't necessary
+
+Todd A. Fisher 
+  * added basic cache invalidation support
+  * fixed a bug in cache sweeping
+  * added basic cache /status on port 4001
+  * fixed linker issue with strnstr
+  * refactoring classes moving router into separate file
+  * update sample to include esi config
+  * fix output to include markup within an attempt and except block, to match esi spec
+  * fix for concurrency bug caused request not being complete
+
+== Release 0.0.2 ==
+
+Todd A. Fisher 
+  * added support for a more robust commandline interface, nearly identical to mongrel_rails
+  * enable fragment caching with new stream parser
+  * support basic surrogate control header. can toggle between content-type header and surrogate control header
+  * support http transfer-encoding: chunked
+  * rewriting parser to be more streamlined, return document as it is retrieved
+  * inherent more from mongrel project structure
+  * use a little c and c++ to speed things up
+
+
+  == Release 0.0.1 ==
+  * first public release
+  * add support to switch esi parsers via config/esi.yml
+  * cleanup handler, reduce code complexity
+  * fix bug with Get request and proxy'ing Set-Cookie headers correctly
+  * fixed load path issues with newer versions of active support and gem
+  * added support to configure the gems added to the asset servers load path
+  * added  - esi.yml for cache config and router configuration - either default or server_iron mode
+  * improve gem home checking, using Gem.path 
+  * updated default config/routes.yml to reflect the ports in production
+  * improve failed fragment request markup
+  * adding tests to cover redirect
+  * process esi on post requests for all text/* content types
+  * clean up how post response status is determined
+  * adding a fix to correctly handle HTTP Get requests, not using open-uri
+  * enable logging for all output
+  * fixed the View Fragment link on fragment fail to be the original module, not the sorry module

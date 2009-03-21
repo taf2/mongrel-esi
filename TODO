@@ -1,0 +1,43 @@
+* load test
+
+* cache expiration with memcached (or other cache stores?)
+  Need to work on advanced caching spec support.
+    advanced cache expire with memcache, we would store in a special key each path to be expired
+    before every request we retrieve the contents of that key and verify before deciding if the url is
+    to be retrieved from cache or surrogate based on whether it matches the set in the expires store.
+
+* rework io
+  
+    rather then processing a single esi:include tag in the order they appear in the document, if we could multiplex then we could request
+    multiple fragments in parallel for a single page. Here's roughly what how it could work.
+
+    client request -> socket read is open
+
+    select on the socket
+
+    send the request to the surrogate (server we're proxying to) over a socket
+
+    select on the surrogate socket
+
+    as the surrogate socket is ready we read data parsing for esi:include tags
+
+    each time we encounter a esi:include tag we need to keep track of the include tag's order and decide whether we can write
+    directly to the client or buffer until earlier include's are finished
+
+    this brings to mind a main loop where we're multiplexing over many different sockets per request.
+
+      - socket for request to surrogate
+      - socket for each esi:include
+      - socket for response to client ( this may not end up in the main loop as mongrel manages this forus... )
+
+      ready_socket = IO.select(reading,writing,errors,2)
+
+      # process the reads
+      # process the writes
+      # process the errors
+      # catch any errors (timeout errors,anything else??..)
+
+
+* esi:vars tag
+* esi:choose tag
+* esi:inline tag

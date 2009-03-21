@@ -1,0 +1,46 @@
+digraph A {
+  rankdir=LR;
+  node [ shape = point ];
+  ENTRY;
+  node [ shape = doublecircle ];
+  tag
+  comment
+  end_comment
+  http_var
+  query_var
+  ENTRY -> 0 [ label = "IN" ];
+
+  node [ shape = circle ];
+
+  0 -> 1 [ label = "'<'" ];
+  1 -> 2 [ label = "'e'" ];
+  2 -> 3 [ label = "'s'" ];
+  3 -> 4 [ label = "'i'" ];
+
+  4 -> tag [ label = "':'" ];
+
+  1 -> 5 [ label = "'!'" ];
+  5 -> 19 [ label = "'-'" ];
+  19 -> 20 [ label = "'-'" ];
+  20 -> 2 [ label = "'e'" ];
+  3 -> comment [ label = "'i'" ];
+  
+  0 -> 6 [ label = "'-'" ];
+  6 -> 7 [ label = "'-'" ];
+  7 -> end_comment [ label = "'>'" ];
+
+  0 -> 8 [ label = "'$'" ];
+  8 -> 9 [ label = "'('" ];
+  9 -> 10 [ label = "'H'" ];
+  10 -> 11 [ label = "'T'" ];
+  11 -> 12 [ label = "'T'" ];
+  12 -> 13 [ label = "'P'" ];
+  13 -> http_var [ label = "'_'" ];
+  
+  9 -> 14 [ label = "'Q'" ];
+  14 -> 15 [ label = "'U'" ];
+  15 -> 16 [ label = "'E'" ];
+  16 -> 17 [ label = "'R'" ];
+  17 -> 18 [ label = "'Y'" ];
+  18 -> query_var [ label = "'_'" ];
+}

@@ -1,0 +1,210 @@
+#!/usr/bin/env python
+
+import os
+import Options
+import inspect
+
+VERSION='0.0.1'
+APPNAME='siphon'
+
+srcdir='.'
+blddir='build'
+
+def set_options(opt):
+  opt.add_option('--with-libev', type='string', help='provide the prefix for libev',dest='libev_prefix')
+  #opt.add_option('--with-v8', type='string', help='provide the prefix for v8',dest='v8_prefix')
+  opt.tool_options('compiler_cxx')
+
+def tolist(x):
+  if type(x) is types.ListType:
+    return x
+  return [x]
+
+# from lighttp wscript
+def env_mod(conf, use):
+  types = [ 'LIB', 'STATICLIB', 'LIBPATH', 'CPPPATH', 'CXXDEFINES', 'CCFLAGS', 'CXXFLAGS', 'LINKFLAGS' ]
+  bak = {}
+  for t in types:
+    bak[t] = conf.env[t]
+    for u in use:
+      conf.env[t] = tolist(conf.env[t]) + tolist(conf.env['%s_%s' % (t, u)])
+  return bak
+
+def env_mod_revert(conf, bak):
+  for (k,v) in bak.items():
+    conf.env[k] = v
+
+def check_library_exists(conf, lib, func, define, code = None, mandatory = 1, lib_suffix = True, uselib = None, use = [], prefix=None):
+  envbak = env_mod(conf, use)
+  if not uselib: uselib = lib.upper()
+  hconf = conf.create_library_configurator()
+  hconf.mandatory = mandatory
+  hconf.name = lib
+  if prefix:
+    if lib_suffix:
+      hconf.path = prefix + "/lib"
+    else:
+      hconf.path = prefix
+
+  hconf.uselib_store = uselib
+  hconf.define = define
+  if code:
+    hconf.code = code
+  else:
+    hconf.code = 'int main() {\nvoid %s(); void *p;\np=(void*)(%s);\nreturn 0;\n}\n' % (func, func)
+  res = hconf.run()
+  env_mod_revert(conf, envbak)
+  return res
+
+def check_header_exists(conf, header, define, uselib = '', prefix = None, mandatory = 1, use= []):
+  envbak = env_mod(conf, use)
+  hconf = conf.create_header_configurator()
+  hconf.mandatory = mandatory
+  hconf.name = header
+  hconf.uselib_store = uselib
+  hconf.define = define
+  if prefix: hconf.path = prefix + "/include"
+  res = hconf.run()
+  env_mod_revert(conf, envbak)
+  return res
+
+def check_function_exists(conf, func, define, headers = None, libs = None, use = []):
+	envbak = env_mod(conf, use)
+	hconf = conf.create_function_enumerator()
+	hconf.function = func
+	hconf.define = define
+	if headers: hconf.headers += headers
+	if libs: hconf.libs += libs
+	hconf.custom_code = 'void %s(); void *p;\np=(void*)(%s);' % (func, func)
+	res = hconf.run()
+	env_mod_revert(conf, envbak)
+	return res
+
+def check_type_size(conf, typename, define, headers = None, use = []):
+	envbak = env_mod(conf, use)
+	hconf = typesize_enumerator(conf)
+	hconf.typename = typename
+	hconf.define = define
+	hconf.headers = []
+	if headers: hconf.headers += headers
+	res = hconf.run()
+	env_mod_revert(conf, envbak)
+	return res
+
+def check_build_exec(conf, msg, define, code_block):
+  res = conf.try_build_and_exec(code=code_block)
+  conf.check_message(msg, '', (res != None and res != False) )
+  if res != None and res != False:
+    conf.define(define, 1)
+
+def configure(conf):
+  conf.check_tool('gcc g++')
+  conf.check_tool('ragel', tooldir = '.')
+  conf.env.append_value('CXXFLAGS', '-g -Wall') # -O2 -fno-strict-aliasing -funroll-loops -finline-functions') #  +
+                                    #' -I' + Options.options.v8_prefix + '/include')
+#  conf.env.append_value('LDFLAGS', '-lv8 -lpthread -L' + Options.options.v8_prefix)
+#  conf.env.append_value('LIBS', '-lv8 -lpthread -L' + Options.options.v8_prefix)
+	#conf.env['CXXFLAGS'] = '-D_REENTRANT -DDBG_ENABLED -Wall -O0 -ggdb3 -ftemplate-depth-128'
+
+  os = conf.detect_platform()
+
+  if os == 'darwin':
+    conf.define('IS_DARWIN',1)
+    conf.env.append_value('CPPFLAGS', '-D_DARWIN_C_SOURCE')
+
+  if os == 'linux': conf.define('IS_LINUX',1)
+
+  check_header_exists(conf, "unistd.h", "HAVE_UNISTD_H", mandatory = 1)
+  check_header_exists(conf, "pwd.h", "HAVE_SOCKET_H", mandatory = 1)
+  check_header_exists(conf, "libgen.h", "HAVE_LIBGEN_H", mandatory = 0)
+  check_header_exists(conf, "socket.h", "HAVE_SOCKET_H", mandatory = 0)
+  check_header_exists(conf, "sys/socket.h", "HAVE_SOCKET_H", mandatory = 0)
+  check_header_exists(conf, "sys/sendfile.h", "HAVE_SENDFILE_H", mandatory = 0)
+  check_header_exists(conf, "ev.h", "HAVE_LIBEV", uselib = 'ev', prefix = Options.options.libev_prefix)
+  check_library_exists(conf, "ev", "ev_loop", "HAVE_LIBEV", uselib = 'ev', prefix = Options.options.libev_prefix, code = '''
+      #include <ev.h>
+
+      int main()
+      {
+        struct ev_loop *loop = ev_default_loop (0);
+        ev_loop(loop,0);
+        return 0;
+      }
+   ''')
+
+#  check_library_exists(conf, "v8", "", "HAVE_V8", code = '''
+#    #include <v8.h>
+#    int main() {
+#      v8::HandleScope scope;
+#      return 0;
+#    }
+#  ''', lib_suffix = False, uselib = 'v8',
+#       prefix = Options.options.v8_prefix)
+
+  # linux test
+  check_build_exec(conf,'function fdopendir','HAVE_FDOPENDIR','''
+    #include <stdlib.h>
+    #include <dirent.h>
+    #include <sys/types.h>
+    #include <sys/stat.h>
+    #include <fcntl.h>
+    #include <unistd.h>
+
+    int main() { int fd = open(".",O_RDONLY);  DIR *dir = fdopendir(fd); closedir(dir); close(fd); return 0; }
+  ''')
+
+  check_build_exec(conf,'siginfo_t.si_utime','HAVE_SIGINFO_TIMERS','''
+    #include <stdlib.h>
+    #include <signal.h>
+    int main(){ siginfo_t info; info.si_utime; info.si_stime; return 0; }
+  ''')
+
+  check_build_exec(conf,'function strndup','HAVE_STRNDUP','''
+    #include <stdlib.h>
+    #include <string.h>
+    int main(){ char *ptr = strndup("hello there waf",5); free(ptr); return 0; }
+  ''')
+
+  check_build_exec(conf,'#define MSG_NOSIGNAL','HAVE_MSG_NOSIGNAL','''
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    int main(){ MSG_NOSIGNAL; return 0;}
+  ''')
+
+  check_build_exec(conf,'#define SIGSTKFLT','HAVE_SIGSTKFLT','''
+    #include <signal.h>
+    int main(){ SIGSTKFLT; return 0;}
+  ''')
+
+  check_build_exec(conf,'#define TCP_CORK','HAVE_TCP_CORK','''
+    #include <stdlib.h>
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <sys/sendfile.h>
+    #include <netinet/tcp.h>
+    int main() {
+      TCP_CORK;
+      return 0;
+    }
+  ''')
+
+  conf.write_config_header('config.h')
+
+def build(bld):
+  siphon = bld.new_task_gen('cxx', 'program')
+  siphon.source = 'conf_parser.rl http11_parser.rl siphon.cc server.cc http_handler.cc http_sock.cc ' \
+                  'proxy_handler.cc dir_handler.cc sock.cc router.cc request.cc ' \
+                  'response.cc logger.cc mod_hello.cc hash_func.cc mime_types.rl ' \
+                  'esi.rl'
+
+  siphon.target = 'siphon'
+  siphon.includes = '.'
+  siphon.uselib = 'ev'
+  #siphon.add_manual_dependency('siphon', '-lv8 -lpthread')
+
+def shutdown():
+  import os
+  if os.path.exists('./build/default/siphon'):
+    cmd = "ruby test/get_test.rb"
+    pipe = os.popen(cmd)
+    print pipe.read()

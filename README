@@ -1,0 +1,188 @@
+=About
+mongrel-esi is meant to make caching easier by distributing the cache logic. 
+
+The idea is to represent each part of the page as a unique URL.  
+
+The whole page may not be cachable, but most of it probably is.  The cache server works by scanning the requested document for 
+specific <esi:* tags before servering the response.  MongrelESI currently, only supports a few basic instructions 
+
+=Tags
+
+esi:include:
+  src     - request path, response replaces esi:include tag
+  alt     - if src is unavailable, use alt
+  timeout - how long to wait on the response
+  max-age - how long to cache the entity
+  onerror - whether continue on errors or trigger an exception
+
+esi:invalidate:
+  encloses invalidation instructions.
+  these instructions currently only support basic invalidation
+  e.g.
+      <esi:invalidate output="no">
+           <?xml version="1.0"?>
+           <!DOCTYPE INVALIDATION SYSTEM "internal:///WCSinvalidation.dtd">
+           <INVALIDATION VERSION="WCS-1.1">
+             <OBJECT>
+               <BASICSELECTOR URI="/path/to/invalidate"/>
+               <ACTION REMOVALTTL="0"/>
+               <INFO VALUE="invalidating fragment test 1"/>
+             </OBJECT>
+           </INVALIDATION>
+      </esi:invalidate>
+
+  In the above example, only /path/to/invalidate will be invalidated, advanced regex style selectors are only support with ruby as the 
+  cache storage.
+  
+esi:try/esi:attempt/esi:except
+  if any tags within the attempt block raise an exception and the onerror attribute is not equal to continue then
+  the server will fall back to the markup within the except block
+
+=Proxy Config
+
+mongrel-esi is a proxy server.   To configure where requests should be proxied modify the config/esi.rb file.
+And run mongrel_esi start -S config/esi.rb
+
+Here's an example:
+
+ESI::Config.define(listeners) do|config|
+  # define request path routing rules
+  config.routes do|s|
+    s.match( /^\/(content|samples|extras).*/ ) do|r|
+      r.servers = ['127.0.0.1:4000']
+    end
+    s.default do|r|
+      r.servers = ['127.0.0.1:3000']
+    end
+  end
+end
+
+This sample configuration will route all urls starting with /content, /samples, or /extras
+to the servers running at 127.0.0.1 on port 4000.
+Everything else that matches the .* will be routed to the server running on port 3000.
+Optionally the caching duration can be specificied explicity for each host
+
+s.default do|r|
+  r.servers = ['127.0.0.1:3000']
+  r.cache_ttl = 300
+end
+
+This example will cache all requests for 300 seconds, but normally you would want to set the ttl on each individual fragment or include.
+
+A typical include would look like the following:
+
+<esi:include src="/content/1" max-age="600+600"/>
+
+Requesting /home, might respond with the following:
+
+<html>
+<head><title>Your Page</title>
+</head>
+<body>
+<div class="header"><esi:include src="/content/1 max-age="600+600"/></div>
+<div>Some content</div>
+<div>Some more content</div>
+</body>
+</html>
+
+If the uri is not already cached, the cache server will request /content/1, which will respond with:
+
+<div>hello User42</div>
+
+And finally, mongrel-esi will respond to the original client request with the combined documents:
+<html>
+<head><title>Your Page</title>
+</head>
+<body>
+<div class="header"><div>hello User42</div></div>
+<div>Some content</div>
+<div>Some more content</div>
+</body>
+</html>
+
+
+== Integrating with your applications
+
+mongrel-esi was built to support integrating lots of applications together.
+
+Primarily, you'll want to integrate by having one base application and many tiny applications that
+surface within your primary application.  In the rails sense think components.  In a bigger sense think
+multiple application technologies all integrating into the same application.  Imagine a java application
+returning up to the minute chat conversations in one part of the page, while rails delivers a reliable listing of
+current forum discussion, and maybe a python presense indicator for forum posts...
+
+One thing to keep in mind is mongrel-esi is a proxy server.  This means for each request it needs to know where to route
+the requests.  To support this config.rb can express any regex to match a url and determine where a request should be
+forwarded as well as defining a default route.
+
+It is also sometimes convenient to allow multiple applications to store or house static content.  For this to work mongrel-esi 
+needs to know in what directories to search for static files.  This can be done by using the MultiDirHandler (see rev-config.rb)
+
+
+== Supported Features of ESI
+
+From [http://www.w3.org/TR/esi-lang esi-lang]
+
+mongrel-esi supports basic include, exception handling and invalidation.  It does not include support for 
+Variable or Conditional processing. It does have suppport for COOKIE variables. 
+(e.g. $(HTTP_COOKIE{name})  will be replaced with the value of the cookie, name)
+
++ Inclusion - ESI can compose pages by assembling included content, which is fetched from the network. 
+	This allows each such fragment to have its own metadata (e.g., cacheability and handling information) seperately associated.
+
+- Variable support - ESI 1.0 supports the use of variables based on HTTP request attributes in a manner 
+ 	reminiscent of the Common Gateway Interface. These variables can be used by ESI statements or written directly into the processed markup.
+
+- Conditional processing - ESI allows conditional logic with Boolean comparisons to be used to influence how a template is processed.
+
++ Exception and error handling - ESI provides for specification of alternate and default resources in a number of situations.
+
+
+
+== HTTP Readings
+
+* http://www.jmarshall.com/easy/http/
+
+
+== Adding New Features and Bug Fixing
+
+Before adding a new feature or bug fix, it's important to add a test to verify the behavior.   
+
+Also, help out by keeping the Changelog updated with new features and major bug fixes 
+
+
+== Future ideas of improving integration
+
+NOTE: this is a work in progress, below is how I'd like to integrate with rails in the future
+
+cd to/path/to/your/primary/rails/app
+
+mongrel_esi add . --default
+mongrel_esi add path/to/your/rails/secondary_app2
+mongrel_esi add path/to/your/rails/secondary_app3
+mongrel_esi add path/to/your/rails/secondary_app4
+
+mongrel_esi start
+  - starts up mongrel in each of the applications
+
+
+== Credits ==
+
+Support:
+  Zed A. Shaw        -- For writing [http://mongrel.rubyforge.org/ mongrel]
+  Adrian D. Thurston -- For writing [http://www.cs.queensu.ca/~thurston/ragel/ ragel]
+
+  The [http://www.ruby-lang.org/ ruby] community, for all their insights and help
+
+Author:
+  Todd Fisher
+
+Co-Authors:
+  Aaron Batalion -- Design ideas and integrating with Rails, fragment_fu. Ragel advocate
+  Richard Kilmer -- Thread saftey dispatcher, production ready
+  Adam Bair      -- Writing the initial testing framework and logger.
+  Jeff Damick    -- Writing the initial configuration.
+
+
+And of course thanks to everyone in #ruby-lang for putting up with my questions
+MenTaLguY for the great help in making good use of ruby

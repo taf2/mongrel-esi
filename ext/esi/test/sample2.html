@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Something else</title>
+</head>
+<body>
+    <![CDATA[
+      Some cdata fun fun fun
+    ]]>
+  <h1>hello</h1>
+  <div class="body">
+  <!--esi
+    <esi:include src="/test/success?id=1"/>
+    <p>comment 1</p>
+  -->
+  <!--esi
+    <esi:vars><div>some content $(QUERY_STRING) for request $(QUERY_STRING{first}) and $(HTTP_COOKIE{name})</div></esi:vars>
+    <p>comment 2</p>
+  -->
+    <esi:comment text="this is a comment woohoo"/>
+    <!-- a little commentary -->
+    <!-- a 
+      multiline comment -->
+    <esi:try>
+      <esi:attempt>
+        <esi:include src="/test/success?id=2&user=$(HTTP_COOKIE{name})"/>
+      </esi:attempt>
+      <esi:except>
+        <p>it failed</p>
+        <esi:include src="/test/success?id=2"/>
+      </esi:except>
+    </esi:try>
+
+    <esi:include src="/test/success?id=3"/>
+
+		<esi:choose>
+			<esi:when test="$(HTTP_COOKIE{name}) == 'sample'">
+				<p>when block</p>
+			</esi:when>
+			<esi:when test="'food' == $(QUERY_STRING{key})">
+				<p>when block</p>
+			</esi:when>
+			<esi:otherwise>
+				<p>otherwise</p>
+			</esi:otherwise>
+		</esi:choose>
+
+    <esi:try>
+      <esi:attempt>
+        <p>We should get this or not?</p>
+        <esi:include src="/test/error"/>
+        <p>Now maybe we shouldn't see this?</p>
+      </esi:attempt>
+      <esi:except>
+        <p>except worked1</p>
+        <esi:include src="/test/success?id=4"
+                     alt="/foo/bar"
+                     timeout="1"
+                     redirect="yes"
+                     max-age="400+200"
+                     method="GET"
+                     onerror="continue"/>
+        <esi:include src='/foo/bar' max-age="600" timeout="10" method="POST" redirect="no"/>
+        <p>except worked2</p>
+      </esi:except>
+    </esi:try>
+
+    <esi:inline name="/test">inline markup</esi:inline>
+
+    <em>Support for em tags since they have an initial start sequence similar to and &lt;esi: start/end sequence</em>
+
+    <esi:invalidate>
+       <?xml version="1.0"?>
+       <!DOCTYPE INVALIDATION SYSTEM "internal:///WCSinvalidation.dtd">
+       <INVALIDATION VERSION="WCS-1.1">
+         <OBJECT>
+           <BASICSELECTOR URI="/test/success?id=1"/>
+           <ACTION REMOVALTTL="0"/>
+           <INFO VALUE="invalidating fragment test 1"/>
+         </OBJECT>
+       </INVALIDATION>
+    </esi:invalidate>
+ 
+		<esi:inline fetchable="yes" max-age="500+200" timeout="12" name="/test">inline markup</esi:inline>
+
+  </div>
+</body>
+</html>
