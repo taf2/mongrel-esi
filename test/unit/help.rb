@@ -23,14 +23,14 @@ class ::WEBrick::BasicLog ; def log(level, data) ; end ; end
 module TestServer
   def setup
  
-    @test_router = ESI::Router.new([{:host => '127.0.0.1', :port => '99999', :match_url => 'default'}])
+    @test_router = ESI::Router.new([{:host => '127.0.0.1', :port => '9999', :match_url => 'default'}])
 
     if defined?($test_server_running)
       setup_extra if self.respond_to?(:setup_extra)
       return
     end
     $test_server_running = true
-    @server = WEBrick::HTTPServer.new( :Port => 99999 )
+    @server = WEBrick::HTTPServer.new( :Port => 9999 )
 
     # setup test server (simulates exact target)
     @server.mount_proc("/test/error") do|req,res|

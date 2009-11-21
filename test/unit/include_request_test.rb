@@ -8,8 +8,8 @@ class IncludeRequestTest < Test::Unit::TestCase
     buffer = ""
     status = 0
     info = nil
-    alt = "http://127.0.0.1:99999#{alt}" if alt
-    ir.request("http://127.0.0.1:99999#{path}",0.5,alt) do|s,r|
+    alt = "http://127.0.0.1:9999#{alt}" if alt
+    ir.request("http://127.0.0.1:9999#{path}",0.5,alt) do|s,r|
       if s
         buffer = r.read_body
         status = 1
